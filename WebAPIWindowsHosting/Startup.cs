@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -27,12 +28,22 @@ namespace WebAPIWindowsHosting
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var hosts = Configuration["AllowedHosts"]?
+                       .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            if (hosts?.Length > 0)
+            {
+                services.Configure<HostFilteringOptions>(
+                    options => options.AllowedHosts = hosts);
+            }
+
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+           
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -49,7 +60,7 @@ namespace WebAPIWindowsHosting
             }
             var statusCode = env.IsDevelopment() ? StatusCodes.Status302Found : StatusCodes.Status301MovedPermanently;
             app.UseRewriter(new RewriteOptions().AddRedirectToHttps(statusCode, httpsPort));
-
+            app.UseHostFiltering();
             app.UseHttpsRedirection();
 
             app.UseRouting();
